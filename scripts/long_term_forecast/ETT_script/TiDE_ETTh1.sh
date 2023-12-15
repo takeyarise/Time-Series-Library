@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=2
+# export CUDA_VISIBLE_DEVICES=2
 
 model_name=TiDE
 
@@ -109,4 +109,3 @@ python -u run.py \
   --learning_rate 0.1 \
   --patience 5 \
   --train_epochs 10 \
-
