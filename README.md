@@ -129,3 +129,89 @@ All the experiment datasets are public, and we obtain them from the following li
 <a href="https://github.com/thuml/Time-Series-Library/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=thuml/Time-Series-Library" />
 </a>
+
+## メモ
+
+**確認事項**
+* データ拡張
+  * データセット内で `StandertScaler()` を予め使用しているデータセットがある
+
+```markdown
+1. Develop your own model.
+- Add the model file to the folder `./models`. You can follow the `./models/Transformer.py`.
+- Include the newly added model in the `Exp_Basic.model_dict` of  `./exp/exp_basic.py`.
+- Create the corresponding scripts under the folder `./scripts`.
+```
+
+### To add model
+
+1. モデルを記述 (`./models/`)
+1. 作成したモデルを `./exp/exp_basic.py` にある `Exp_Basic.model_dict` に追加
+1. 適したスクリプトファイルを記述 (`./scripts/`)
+
+```python
+# モデルサンプル
+class Transformer(nn.Module):
+	def __init__(self, configs: Namespace):
+		...  # モデルの定義
+
+	def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
+		...  # 回帰タスクの処理
+
+	def imputation(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask):
+		...  # 補間タスクの処理
+
+	def anomaly_detection(self, x_enc):
+		...  # 異常検知タスクの処理
+
+	def classification(self, x_enc, x_mark_enc):
+		...  # 分類タスクの処理
+
+	def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
+		if self.task_name in ['long_term_forecast', 'short_term_forecast']:
+			dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec, mask)
+			return dec_out[:, -self.pred_len:, :]  # (b, l, d)
+		if self.task_name == 'imputation':
+			dec_out = self.imputation(x_enc, x_mark_enc, x_dec, x_mark_dec, mask)
+			return dec_out  # (b, l, d)
+		if self.task_name == 'anomaly_detection':
+			dec_out = self.anomaly_detection(x_enc)
+			return dec_out  # (b, l, d)
+		if self.task_name == 'classification':
+			dec_out = self.classification(x_enc, x_mark_enc)
+			return dec_out  # (b, n)
+		return None
+```
+
+* 引数の説明
+  * `x_enc`: ???
+  * `x_mark_enc`: ???
+  * `x_dec`: ???
+  * `x_mark_dec`: ???
+  * `mask=None`: ???
+
+### To add Exp
+
+* `./data_provider/data_factory.py` が訓練・評価データセットを提供
+  * `data_dict` にデータセットクラスを追加
+* `Dataset`
+  * `flag` によって `__len__` の返す値が異なる記述をしているデータセットがある
+  * `__getitem__` は 4 つのものもあれば 2 つのものもある
+  * `__init__` に渡される引数
+    * anomaly detection
+      * `root_path`
+      * `win_size`
+      * `flag`
+    * classification
+      * `root_path`
+      * `flag`
+    * others
+      * `root_path`
+      * `data_path`
+      * `flag`
+      * `size`
+      * `features`
+      * `target`
+      * `timeenc`
+      * `freq`
+      * `seasonal_patterns`
